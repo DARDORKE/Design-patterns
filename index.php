@@ -17,6 +17,12 @@
 //
 //Par simplification, on considérera que l'envoi d'une notification consistera à indiquer "%type de notification% de confirmation envoyé à %moyen contact% ".
 
+//Question 2
+//Lorsqu'une notification de type SMS est envoyée, nous souhaitons être informés du fait que celui-ci a bien été remis à son destinataire.
+//
+//Implémentez la structure nécessaire à la mise en œuvre de ce système. Une méthode setReceived(bool $isReceived) permettra de déclencher un changement d'état de cet objet.
+//
+//Par simplification, on appellera la méthode sous cette forme $this->setReceived((bool) rand(0, 1)); au sein de la méthode send de l'objet représentant la notification SMS.
 
 /**
  * Class Notification
@@ -46,11 +52,44 @@ class EmailNotification extends Notification
 /**
  * Class SMSNotification
  */
-class SMSNotification extends Notification
+class SMSNotification extends Notification implements SplSubject
 {
+    private $observers;
+
+    public function __construct()
+    {
+        $this->observers = new SplObjectStorage();;
+    }
+
+    public function attach(SplObserver $observer)
+    {
+        $this->observers->attach($observer);
+    }
+
+    public function detach(SplObserver $observer)
+    {
+        $this->observers->detach($observer);
+    }
+
+    public function notify()
+    {
+        foreach ($this->observers as $observer) {
+            $observer->update($this);
+        }
+    }
+
     protected function send(string $recipient, string $message)
     {
         echo sprintf("SMS envoyé au %s contenant le message %s <br/>", $recipient, $message);
+        $this->setReceived((bool) rand(0, 1));
+    }
+
+    public function setReceived(bool $isReceived)
+    {
+        if ($isReceived) {
+            // on ne déclenche l'événement que si le message a bien été reçu
+            $this->notify();
+        }
     }
 }
 
@@ -59,7 +98,6 @@ class SMSNotification extends Notification
  */
 class NotificationFactory
 {
-    // La mise en place du modèle Factory permettra de futures évolutions
     /**
      * @param string $contactType
      * @return EmailNotification|SMSNotification
@@ -68,12 +106,27 @@ class NotificationFactory
     {
         switch ($contactType) {
             case 'sms':
-                return new SMSNotification();
+                $smsNotification = new SMSNotification();
+                // On attache un type d'événement à notre notification après l'avoir instanciée
+                $smsNotification->attach(new SMSIsReceived());
+                return $smsNotification;
                 break;
             case 'email':
             default:
                 return new EmailNotification();
         }
+    }
+}
+
+/**
+ * Class SMSIsReceived
+ */
+class SMSIsReceived implements SplObserver
+{
+    // le but de cet événement est d'informer l'utilisateur de la bonne remise du message
+    public function update(SplSubject $notification)
+    {
+        echo sprintf('Message remis <br/>');
     }
 }
 
