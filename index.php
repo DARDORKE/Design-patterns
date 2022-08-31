@@ -17,6 +17,66 @@
 //
 //Par simplification, on considérera que l'envoi d'une notification consistera à indiquer "%type de notification% de confirmation envoyé à %moyen contact% ".
 
+
+/**
+ * Class Notification
+ */
+abstract class Notification
+{
+    // Tout type de notification doit implémenter une méthode send()
+    protected abstract function send(string $recipient, string $message);
+
+    public function manageNotification($recipient, $message)
+    {
+        $this->send($recipient, $message);
+    }
+}
+
+/**
+ * Class EmailNotification
+ */
+class EmailNotification extends Notification
+{
+    protected function send(string $recipient, string $message)
+    {
+        echo sprintf("Email envoyé au %s contenant le message %s  <br/>", $recipient, $message);
+    }
+}
+
+/**
+ * Class SMSNotification
+ */
+class SMSNotification extends Notification
+{
+    protected function send(string $recipient, string $message)
+    {
+        echo sprintf("SMS envoyé au %s contenant le message %s <br/>", $recipient, $message);
+    }
+}
+
+/**
+ * Class NotificationFactory
+ */
+class NotificationFactory
+{
+    // La mise en place du modèle Factory permettra de futures évolutions
+    /**
+     * @param string $contactType
+     * @return EmailNotification|SMSNotification
+     */
+    public static function createNotification(string $contactType)
+    {
+        switch ($contactType) {
+            case 'sms':
+                return new SMSNotification();
+                break;
+            case 'email':
+            default:
+                return new EmailNotification();
+        }
+    }
+}
+
 /**
  * Class Client
  */
@@ -60,5 +120,6 @@ $clientsToNotify[] = new Client("Justine", "email", "justine@mail.fr", "01.02.03
 
 foreach ($clientsToNotify as $client)
 {
-    // Pour chacun des clients, on doit notifier celui-ci selon son moyen de contact favori que sa commande a été expédiée.
+    $notification = NotificationFactory::createNotification($client->contactWith);
+    $notification->manageNotification($client->getContactInformation(), $message);
 }
