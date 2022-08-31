@@ -1,91 +1,64 @@
 <?php
-
-//À l'aide du design pattern Observer, mettez en place les événements suivants lorsqu'un nouvel employé est créé.
+// Enoncé
+//Pour les besoins d'un site de vente en ligne, vous êtes chargé de mettre en place un système permettant d'informer un client que sa commande a été expédiée.
 //
-//Un message indiquera "Bienvenue à notre nouvel employé %nom%" afin de prévenir l'ensemble des équipes d'un nouvel arrivant
+//Le code ci-dessous implémente la classe Client et vous fournit une liste de clients que vous devrez contacter.
 //
-//Un second message à destination des services financiers demandera quant à lui de mettre en place le virement nécessaire au paiement du salaire de cet employé
+//Un client est toujours contacté selon son moyen de contact favori, représenté par la propriété $contactWith.
+//
+//Selon celui-ci, la méthode getContactInformation() permet de retourner son numéro de téléphone ou son adresse e-mail.
 
-class Employee
+// Question 1
+//Chacun des clients de la liste dont vous disposez doit être informé par une notification selon son moyen de contact favori.
+//
+//À ce jour, un client peut être notifié par e-mail ou par SMS, mais la société envisage, à terme, de prendre contact avec ses clients au moyen de messageries instantanées. Le système que vous allez implémenter devra prendre en compte cette contrainte d'évolutivité.
+//
+//Selon le script et les informations dont vous disposez, implémentez les classes nécessaires à la gestion de ces notifications, ainsi que le script permettant leur envoi.
+//
+//Par simplification, on considérera que l'envoi d'une notification consistera à indiquer "%type de notification% de confirmation envoyé à %moyen contact% ".
+
+/**
+ * Class Client
+ */
+class Client
 {
-    private string $name;
+    public $name;
+    public $contactWith;
+    public $email;
+    public $phoneNumber;
 
-    public function __construct(string $name)
+    public function __construct(string $name, string $contactBy, string $email, string $phoneNumber)
     {
         $this->name = $name;
+        $this->contactWith = $contactBy;
+        $this->email = $email;
+        $this->phoneNumber = $phoneNumber;
     }
 
-    public function getName(): string
+    public function getContactInformation()
     {
-        return $this->name;
-    }
-}
-
-class EmployeeManager implements SplSubject
-{
-    private SplObjectStorage $observers;
-
-    private $employee;
-
-    public function __construct()
-    {
-        $this->observers = new SplObjectStorage();
-    }
-
-    #[ReturnTypeWillChange] public function attach(SplObserver $observer)
-    {
-        $this->observers->attach($observer);
-    }
-
-    #[ReturnTypeWillChange] public function detach(SplObserver $observer)
-    {
-        $this->observers->detach($observer);
-    }
-
-    #[ReturnTypeWillChange] public function notify()
-    {
-        foreach ($this->observers as $observer) {
-            $observer->update($this);
+        switch ($this->contactWith) {
+            case 'sms':
+                return $this->phoneNumber;
+                break;
+            case 'email':
+            default:
+                return $this->email;
+                break;
         }
     }
-
-    public function create(Employee $employee)
-    {
-        $this->employee = $employee;
-
-        // code métier qui permettrait l'ajout de l'employé en BDD
-
-        // on notifie les listeners
-        $this->notify();
-    }
-
-    public function getEmployee()
-    {
-        return $this->employee;
-    }
 }
 
-class SayWelcome implements SplObserver
+$message = "Commande expédiée";
+$clientsToNotifyToNotify = [];
+
+$clientsToNotify[] = new Client("Karine", "email", "karine@mail.fr", "01.02.03.04.05.06");
+$clientsToNotify[] = new Client("Julien", "sms", "julien@mail.fr", "01.02.03.04.05.07");
+$clientsToNotify[] = new Client("Karim", "sms", "karim@mail.fr", "01.02.03.04.05.08");
+$clientsToNotify[] = new Client("Justine", "email", "justine@mail.fr", "01.02.03.04.05.09");
+
+
+foreach ($clientsToNotify as $client)
 {
-    #[ReturnTypeWillChange] public function update(SplSubject $employeeManager)
-    {
-        echo 'Bienvenue à notre nouvel employé ' . $employeeManager->getEmployee()->getName() . ' <br/>';
-    }
+    // Pour chacun des clients, on doit notifier celui-ci selon son moyen de contact favori que sa commande a été expédiée.
 }
-
-class AlertFinancialServices implements SplObserver
-{
-    #[ReturnTypeWillChange] public function update(SplSubject $employeeManager)
-    {
-        echo 'Un nouvel employé est arrivé dans l\'entreprise, merci de mettre en place le virement pour ' . $employeeManager->getEmployee()->getName() . ' <br/>';
-    }
-}
-
-$sayWelcome = new SayWelcome();
-$alertFinancielServices = new AlertFinancialServices();
-$employeeManager = new EmployeeManager();
-$employeeManager->attach($sayWelcome);
-$employeeManager->attach($alertFinancielServices);
-
-$employee = new Employee('Caroline');
-$employeeManager->create($employee);
